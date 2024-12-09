@@ -129,7 +129,7 @@ def add_status_page(
     status_page_data_files=None, status_page_title=None, status_page_slug=None, logger=None, url=None, save=None
 ):
     """
-    Creates/Adds a status page in uptime kuma.
+    Creates/Adds/Updates a status page in uptime kuma.
 
     :param status_page_data_files: (Path) Status page config file location. File or Directory.
     :param status_page_title: (str) Title of the status page.
@@ -177,26 +177,25 @@ def add_status_page(
             status_page_details = get_satus_page(slug=status_page_slug, url=url, logger=logger)
             status_page_id = status_page_details["id"]
             console.print(
-                f":sunflower: Status page '{status_page_id} - {status_page_title} ({status_page_slug})' already exists.",
+                f":sunflower: Status page '{status_page_id} - {status_page_title} ({status_page_slug})' already exists. Updating.",
                 style="logging.level.info",
             )
             logger.debug(status_page_details)
             status_page_details.pop("incident")
             status_page_details.pop("maintenanceList")
             return status_page_details
-        else:
-            with wait_for_event(ioevents.status_page_list):
-                response = _sio_call("addStatusPage", (status_page_title.title(), status_page_slug))
-                if response["ok"]:
-                    console.print(
-                        f":hatching_chick: Status page '{status_page_title.title()} ({status_page_slug})' has been created.",
-                        style="logging.level.info",
-                    )
-                    return response
-                    logger.debug(f"Status page creation response: {response}")
-                else:
-                    console.print(f":red_circle: Error: {response['msg']}")
-                    sys.exit(1)
+        with wait_for_event(ioevents.status_page_list):
+            response = _sio_call("addStatusPage", (status_page_title.title(), status_page_slug, status_page_id))
+            if response["ok"]:
+                console.print(
+                    f":hatching_chick: Status page '{status_page_title.title()} ({status_page_slug})' has been created or updated.",
+                    style="logging.level.info",
+                )
+                logger.debug(f"Status page creation response: {response}")
+                return response
+            else:
+                console.print(f":red_circle: Error: {response['msg']}")
+                sys.exit(1)
     # console.print(Rule(style="purple"))
 
 

@@ -83,7 +83,7 @@ def _get_or_create_monitor_group(group_name=None):
 
 def _get_or_create_process_monitor(input_data=None):
     """
-    Get or create monitor process
+    Get, create or update monitor process
 
     :param input_data: (dict) Monitor process input data
     :return: (dict) 'add' event response or process exists dictionary
@@ -94,33 +94,34 @@ def _get_or_create_process_monitor(input_data=None):
 
     if process_monitor_check["exists"]:
         console.print(
-            f":sunflower: Monitor process '{process_monitor_name}' already exists.", style="logging.level.info"
+            f":sunflower: Monitor process '{process_monitor_name}' already exists. Updating", style="logging.level.info"
         )
+        input_data["id"] = process_monitor_check["id"]
         process_monitor_info = {"name": process_monitor_name, "id": process_monitor_check["id"]}
-    else:
-        # logger.info(f"Monitor process '{process_monitor_name}' doesn't exists.")
-        # logger.info(f"Creating monitor process for '{process_monitor_name}'.")
-        process_monitor_data_payload = _get_monitor_payload(**input_data)
-        # print(process_monitor_data_payload)
-        missing_arguments = get_missing_arguments(process_monitor_data_payload)
-        if not missing_arguments:
-            with wait_for_event(ioevents.monitor_list):
-                add_event_response = _sio_call("add", process_monitor_data_payload)
-            if add_event_response["ok"]:
-                process_monitor_info = {"name": process_monitor_name, "id": add_event_response["monitorID"]}
-                console.print(
-                    f":hatching_chick: Monitor process for '{input_data['name']}' has been created.",
-                    style="logging.level.info",
-                )
-            else:
-                console.print(f":red_circle: Error! {add_event_response.get('msg')}", style="logging.level.error")
-        else:
-            flat_missing_arguments = ", ".join([f"'{item}'" for item in missing_arguments])
+
+    # logger.info(f"Monitor process '{process_monitor_name}' doesn't exists.")
+    # logger.info(f"Creating monitor process for '{process_monitor_name}'.")
+    process_monitor_data_payload = _get_monitor_payload(**input_data)
+    # print(process_monitor_data_payload)
+    missing_arguments = get_missing_arguments(process_monitor_data_payload)
+    if not missing_arguments:
+        with wait_for_event(ioevents.monitor_list):
+            add_event_response = _sio_call("add", process_monitor_data_payload)
+        if add_event_response["ok"]:
+            process_monitor_info = {"name": process_monitor_name, "id": add_event_response["monitorID"]}
             console.print(
-                f":nut_and_bolt: Missing arguments for monitor process '{process_monitor_name}'. Missing {flat_missing_arguments} key(s).",
-                style="logging.level.error",
+                f":hatching_chick: Monitor process for '{input_data['name']}' has been created or updated.",
+                style="logging.level.info",
             )
-            sys.exit(1)
+        else:
+            console.print(f":red_circle: Error! {add_event_response.get('msg')}", style="logging.level.error")
+    else:
+        flat_missing_arguments = ", ".join([f"'{item}'" for item in missing_arguments])
+        console.print(
+            f":nut_and_bolt: Missing arguments for monitor process '{process_monitor_name}'. Missing {flat_missing_arguments} key(s).",
+            style="logging.level.error",
+        )
+        sys.exit(1)
     return process_monitor_info
 
 
